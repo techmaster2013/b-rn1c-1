@@ -1,3 +1,4 @@
+> This is a edited version of Barnical. For the original, go [here](https://barnical.github.io).
 ## I AM NOT AFFILIATED WITH THE BARNICAL TEAM
 
 # 🐚 BARNICAL
