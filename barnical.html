@@ -1,0 +1,548 @@
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Barnacle</title>
+    <link rel="icon" href="../7xXvLp1.webp" type="image/x-icon" />
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@100;400;600&display=swap" rel="stylesheet">
+
+    <!-- CSS -->
+    <style>
+        :root {
+            --card: #262624;
+            --ring: #d97757;
+            --input: #52514a;
+            --muted: #1b1b19;
+            --accent: #1a1915;
+            --border: #3e3e38;
+            --radius: 0.5rem;
+            --popover: #30302e;
+            --primary: #d97757;
+            --sidebar: #1f1e1d;
+            --secondary: #faf9f5;
+            --background: #191919;
+            --foreground: #c3c0b6;
+            --destructive: #ef4444;
+            --card-foreground: #faf9f5;
+            --muted-foreground: #b7b5a9;
+            --accent-foreground: #f5f4ee;
+            --popover-foreground: #e5e5e2;
+            --primary-foreground: #ffffff;
+            --secondary-foreground: #30302e;
+            --destructive-foreground: #ffffff;
+
+            --purple: rgb(123, 31, 162);
+            --violet: #9c87f5;
+            --pink: #d97757;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            background-color: var(--background);
+            margin: 0px;
+            overflow: auto;
+            user-select: none;
+            font-family: 'Montserrat', sans-serif;
+            color: var(--foreground);
+            display: grid;
+            place-content: center;
+            min-height: 100vh;
+        }
+
+        canvas { width: 100%; height: 100%; }
+
+        h1 {
+            color: var(--card-foreground);
+            font-family: "Rubik", sans-serif;
+            font-size: clamp(2em, 2vw, 4em);
+            font-weight: 400;
+            margin: 0px;
+            padding: 100px 24px 40px;
+            text-align: center;
+            animation: fade-in-up 0.6s ease-out both;
+        }
+
+        h1>.magic { display: inline-block; position: relative; }
+
+        h1>.magic>.magic-text {
+            background: linear-gradient(to right, var(--primary), var(--violet), var(--pink), var(--primary));
+            background-size: 200%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            white-space: nowrap;
+            animation: background-pan 3s linear infinite;
+        }
+
+        @keyframes background-pan {
+            from { background-position: 0% center; }
+            to { background-position: -200% center; }
+        }
+
+        @keyframes fade-in-up {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fade-in {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes modal-pop {
+            from { opacity: 0; transform: scale(0.96) translateY(8px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        @keyframes backdrop-fade {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes pulse-ring {
+            0% { box-shadow: 0 0 0 0 rgba(217, 119, 87, 0.35); }
+            70% { box-shadow: 0 0 0 6px rgba(217, 119, 87, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(217, 119, 87, 0); }
+        }
+
+        @keyframes modal-pop-out {
+            from { opacity: 1; transform: scale(1) translateY(0); }
+            to { opacity: 0; transform: scale(0.96) translateY(8px); }
+        }
+
+        @keyframes backdrop-fade-out {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+
+        .modal-backdrop.closing { animation: backdrop-fade-out 0.15s ease-in both; }
+        .modal-backdrop.closing .modal-card { animation: modal-pop-out 0.15s ease-in both; }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+                scroll-behavior: auto !important;
+            }
+        }
+
+        .button-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 16px 60px;
+        }
+
+        .button-container button {
+            flex-basis: calc(33.33% - 10px);
+            margin: 5px;
+            padding: 10px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            font-size: 15px;
+            font-weight: normal;
+            box-shadow: 0px 0px 5px rgba(84, 78, 78, 0.8);
+            background-color: var(--card);
+            color: var(--foreground);
+            width: max(15vh, 35vh);
+            text-align: center;
+            cursor: pointer;
+            opacity: 0;
+            transform: translateY(8px);
+            animation: fade-in-up 0.4s ease-out forwards;
+            animation-delay: calc(var(--btn-index, 0) * 30ms);
+            transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
+        }
+
+        .button-container button:hover,
+        .button-container button:focus-visible {
+            border-color: var(--primary);
+            color: var(--card-foreground);
+            background-color: var(--accent);
+            box-shadow: 0px 0px 10px rgba(217, 119, 87, 0.25);
+        }
+
+        .button-container button:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+        .button-container button:active { transform: scale(0.97); transition-duration: 0.1s; }
+
+        @media (max-width: 768px) { .button-container button { flex-basis: calc(50% - 10px); } }
+        @media (max-width: 480px) { .button-container button { flex-basis: calc(100% - 10px); } }
+        @media (min-width: 1920px) { .button-container button { flex-basis: calc(20% - 10px); } }
+        @media (min-width: 3840px) { .button-container button { flex-basis: calc(15% - 10px); } }
+
+        #game-search {
+            width: 60vh;
+            max-width: 90vw;
+            padding: 10px;
+            font-size: 15px;
+            font-family: 'Montserrat', sans-serif;
+            background-color: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            color: var(--foreground);
+            box-shadow: 0px 0px 5px rgba(84, 78, 78, 0.8);
+            margin: 1vh auto 3vh auto;
+            display: block;
+            outline: none;
+            cursor: text;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+            animation: fade-in-up 0.6s ease-out 0.1s both;
+        }
+
+        #game-search::placeholder { color: var(--muted-foreground); transition: color 0.2s ease; }
+        #game-search:focus {
+            border-color: var(--ring);
+            box-shadow: 0px 0px 5px rgba(84, 78, 78, 0.8), 0 0 0 3px rgba(217, 119, 87, 0.18);
+        }
+        #game-search:focus::placeholder { color: var(--foreground); }
+
+        .shine-button {
+            position: relative;
+            display: block;
+            margin: -2vh auto 4vh auto;
+            width: max-content;
+            padding: 8px 18px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            color: var(--muted-foreground);
+            background-color: var(--card);
+            font-family: 'Montserrat', sans-serif;
+            font-size: 13px;
+            font-weight: normal;
+            cursor: pointer;
+            overflow: hidden;
+            transition: color 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
+            animation: fade-in 0.6s ease-out 0.2s both;
+        }
+
+        .shine-button::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            background-image: linear-gradient(45deg, transparent 25%, rgba(255,255,255,0.15) 50%, transparent 75%, transparent 100%);
+            background-size: 250% 250%;
+            background-position: 200% 0;
+            background-repeat: no-repeat;
+            transition: background-position 1000ms ease;
+            pointer-events: none;
+        }
+
+        .shine-button:hover::before { background-position: -100% 0; }
+        .shine-button:hover { color: var(--card-foreground); border-color: var(--primary); background-color: var(--accent); }
+        .shine-button:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+        .shine-button:active { transform: scale(0.97); transition: transform 0.1s ease; }
+
+        .modal-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 99999;
+            animation: backdrop-fade 0.2s ease-out both;
+        }
+
+        .modal-card {
+            background: var(--popover);
+            color: var(--popover-foreground);
+            border-radius: var(--radius);
+            max-width: 600px;
+            width: 90%;
+            padding: 20px 24px;
+            box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.6);
+            border: 1px solid var(--border);
+            animation: modal-pop 0.25s cubic-bezier(0.2, 0.9, 0.3, 1.1) both;
+        }
+
+        .modal-card h2 { margin: 0 0 8px 0; font-size: 1.1rem; font-weight: 600; color: var(--card-foreground); }
+        .modal-card .meta { color: var(--muted-foreground); font-size: 0.85rem; margin-bottom: 12px; }
+        .modal-card ul { margin: 0 0 12px 18px; padding: 0; color: var(--popover-foreground); font-size: 0.9rem; line-height: 1.6; }
+        .modal-card ul li { transition: color 0.2s ease; }
+
+        .modal-actions { display: flex; justify-content: flex-end; gap: 8px; align-items: center; }
+
+        .modal-actions button {
+            padding: 8px 16px;
+            margin: 0;
+            width: auto;
+            border-radius: var(--radius);
+            background: var(--accent);
+            border: 1px solid var(--border);
+            color: var(--accent-foreground);
+            cursor: pointer;
+            font-family: 'Montserrat', sans-serif;
+            font-weight: normal;
+            font-size: 14px;
+            box-shadow: none;
+            transition: border-color 0.2s ease, background-color 0.2s ease, transform 0.1s ease;
+        }
+
+        .modal-actions button:hover { border-color: var(--primary); background-color: var(--muted); }
+        .modal-actions button:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+        .modal-actions button:active { transform: scale(0.96); }
+
+        .modal-hidden { display: none; }
+
+        #feedback-type-group { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+
+        .feedback-type-btn {
+            padding: 5px 14px;
+            border-radius: 999px;
+            border: 1px solid var(--border);
+            background: var(--card);
+            color: var(--muted-foreground);
+            font-family: 'Montserrat', sans-serif;
+            font-size: 12px;
+            cursor: pointer;
+            transition: border-color 0.2s ease, color 0.2s ease, background-color 0.2s ease;
+            user-select: none;
+        }
+
+        .feedback-type-btn:hover { border-color: var(--primary); color: var(--card-foreground); }
+        .feedback-type-btn.active { border-color: var(--primary); background-color: var(--accent); color: var(--primary); }
+
+        #feedback-message {
+            width: 100%;
+            min-height: 100px;
+            resize: vertical;
+            padding: 10px;
+            font-size: 13px;
+            font-family: 'Montserrat', sans-serif;
+            background-color: var(--accent);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            color: var(--foreground);
+            outline: none;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+            margin-bottom: 14px;
+            display: block;
+            user-select: text;
+        }
+
+        #feedback-message:focus { border-color: var(--ring); box-shadow: 0 0 0 3px rgba(217, 119, 87, 0.18); }
+        #feedback-message::placeholder { color: var(--muted-foreground); }
+
+        #feedback-submit {
+            background-color: var(--primary) !important;
+            color: var(--primary-foreground) !important;
+            border-color: var(--primary) !important;
+            font-weight: 600 !important;
+            transition: opacity 0.2s ease, transform 0.1s ease !important;
+        }
+
+        #feedback-submit:hover { opacity: 0.88; background-color: var(--primary) !important; }
+        #feedback-submit:disabled { opacity: 0.45; cursor: not-allowed; transform: none !important; }
+
+        #feedback-status { font-size: 12px; margin-right: auto; align-self: center; transition: color 0.2s ease; }
+        #feedback-status.success { color: #4ade80; }
+        #feedback-status.error { color: var(--destructive); }
+    </style>
+</head>
+
+<body>
+
+    <h1>Made by a student, for students.
+        <span class="magic">
+            <span class="magic-text">Barnacle</span>
+        </span>
+    </h1>
+
+    <input type="text" id="game-search" placeholder="Type to search..." />
+
+    <div style="display:flex; justify-content:center; gap:10px; margin: -2vh auto 4vh auto; width: max-content; animation: fade-in 0.6s ease-out 0.2s both;">
+        <button id="changelog-open" class="shine-button" style="margin: 0; animation: none;">View Changelog</button>
+        <button id="feedback-open" class="shine-button" style="margin: 0; animation: none;">Send Feedback</button>
+    </div>
+
+    <!-- Changelog modal -->
+    <div id="changelog-backdrop" class="modal-backdrop modal-hidden" role="dialog" aria-modal="true" aria-labelledby="changelog-title">
+        <div class="modal-card" id="changelog-card">
+            <h2 id="changelog-title">Changelog</h2>
+            <div class="meta" id="changelog-meta">Version</div>
+            <ul id="changelog-list"></ul>
+            <div class="modal-actions">
+                <button id="changelog-close">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Feedback modal -->
+    <div id="feedback-backdrop" class="modal-backdrop modal-hidden" role="dialog" aria-modal="true" aria-labelledby="feedback-title">
+        <div class="modal-card">
+            <h2 id="feedback-title">Send Feedback</h2>
+            <div class="meta">Got a suggestion, bug report, or game request? Let us know.</div>
+            <div id="feedback-type-group">
+                <button class="feedback-type-btn active" data-type="Suggestion">💡 Suggestion</button>
+                <button class="feedback-type-btn" data-type="Bug Report">🐛 Bug Report</button>
+                <button class="feedback-type-btn" data-type="Game Request">🎮 Game Request</button>
+                <button class="feedback-type-btn" data-type="Other">✉️ Other</button>
+            </div>
+            <textarea id="feedback-message" placeholder="Write your feedback here..."></textarea>
+            <div class="modal-actions">
+                <span id="feedback-status"></span>
+                <button id="feedback-cancel">Cancel</button>
+                <button id="feedback-submit">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="button-container"></div>
+    <script src="games.js"></script>
+    <script src="changelog.js"></script>
+
+    <script>
+        const buttons = document.querySelectorAll(".button-container button");
+        const searchInput = document.getElementById("game-search");
+        const buttonContainer = document.querySelector(".button-container");
+        const allButtons = Array.from(buttonContainer.querySelectorAll("button"));
+
+        function sortButtons(buttons) {
+            return buttons.sort((a, b) => a.textContent.trim().localeCompare(b.textContent.trim()));
+        }
+
+        searchInput.addEventListener("input", () => {
+            const searchTerm = searchInput.value.toLowerCase();
+            const filteredButtons = allButtons.filter(btn => btn.textContent.toLowerCase().includes(searchTerm));
+            buttonContainer.innerHTML = "";
+            sortButtons(filteredButtons).forEach((btn, i) => {
+                btn.style.animation = "none";
+                btn.style.setProperty("--btn-index", i);
+                buttonContainer.appendChild(btn);
+                requestAnimationFrame(() => { btn.style.animation = ""; });
+            });
+        });
+
+        buttonContainer.innerHTML = "";
+        sortButtons(allButtons).forEach((btn, i) => {
+            btn.style.setProperty("--btn-index", i);
+            buttonContainer.appendChild(btn);
+        });
+
+        function openDictionary(dictionaryURL) { window.location.href = dictionaryURL; }
+
+        buttons.forEach((button) => {
+            button.addEventListener("click", function () {
+                const url = button.dataset.url || button.getAttribute('data-url');
+                if (url) openDictionary(url);
+            });
+        });
+
+        // ── Changelog modal ──────────────────────────────────────────────
+        const changelogOpenBtn = document.getElementById("changelog-open");
+        const changelogBackdrop = document.getElementById("changelog-backdrop");
+        const changelogCloseBtn = document.getElementById("changelog-close");
+
+        function closeModal(backdrop) {
+            if (!backdrop || backdrop.classList.contains("modal-hidden")) return;
+            backdrop.classList.add("closing");
+            const finish = () => {
+                backdrop.classList.add("modal-hidden");
+                backdrop.classList.remove("closing");
+            };
+            if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+                finish();
+            } else {
+                backdrop.addEventListener("animationend", finish, { once: true });
+            }
+        }
+
+        if (changelogOpenBtn && changelogBackdrop) {
+            changelogOpenBtn.addEventListener("click", () => {
+                changelogBackdrop.classList.remove("modal-hidden", "closing");
+            });
+        }
+        if (changelogCloseBtn) {
+            changelogCloseBtn.addEventListener("click", () => closeModal(changelogBackdrop));
+            changelogBackdrop.addEventListener("click", (e) => {
+                if (e.target === changelogBackdrop) closeModal(changelogBackdrop);
+            });
+        }
+
+        document.addEventListener("keydown", (e) => {
+            if (e.key === "Escape") {
+                closeModal(changelogBackdrop);
+                closeModal(feedbackBackdrop);
+            }
+        });
+
+        // ── Feedback modal ───────────────────────────────────────────────
+        const SHEETS_URL = "https://script.google.com/macros/s/AKfycbzGWX8FlaW5WU5hIAgTVokVm55r9ExqzAvybXOWcCFXj_7_BmG0YjwNTQjBykBvHZTR0g/exec";
+
+        const feedbackOpenBtn = document.getElementById("feedback-open");
+        const feedbackBackdrop = document.getElementById("feedback-backdrop");
+        const feedbackCancel = document.getElementById("feedback-cancel");
+        const feedbackSubmit = document.getElementById("feedback-submit");
+        const feedbackMessage = document.getElementById("feedback-message");
+        const feedbackStatus = document.getElementById("feedback-status");
+        const feedbackTypeBtns = document.querySelectorAll(".feedback-type-btn");
+
+        let selectedType = "Suggestion";
+
+        feedbackTypeBtns.forEach(btn => {
+            btn.addEventListener("click", () => {
+                feedbackTypeBtns.forEach(b => b.classList.remove("active"));
+                btn.classList.add("active");
+                selectedType = btn.dataset.type;
+            });
+        });
+
+        feedbackOpenBtn.addEventListener("click", () => {
+            feedbackBackdrop.classList.remove("modal-hidden", "closing");
+            feedbackMessage.focus();
+        });
+
+        feedbackCancel.addEventListener("click", () => closeModal(feedbackBackdrop));
+        feedbackBackdrop.addEventListener("click", (e) => {
+            if (e.target === feedbackBackdrop) closeModal(feedbackBackdrop);
+        });
+
+        feedbackSubmit.addEventListener("click", async () => {
+            const text = feedbackMessage.value.trim();
+            if (!text) {
+                feedbackStatus.textContent = "Please write something first.";
+                feedbackStatus.className = "error";
+                return;
+            }
+
+            feedbackSubmit.disabled = true;
+            feedbackStatus.textContent = "Sending…";
+            feedbackStatus.className = "";
+
+            try {
+                await fetch(SHEETS_URL, {
+                    method: "POST",
+                    mode: "no-cors", // required for Apps Script
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ type: selectedType, message: text })
+                });
+
+                // no-cors means we can't read the response, so we assume success
+                feedbackStatus.textContent = "Feedback sent — thanks!";
+                feedbackStatus.className = "success";
+                feedbackMessage.value = "";
+                feedbackTypeBtns.forEach(b => b.classList.remove("active"));
+                feedbackTypeBtns[0].classList.add("active");
+                selectedType = "Suggestion";
+                setTimeout(() => closeModal(feedbackBackdrop), 1200);
+            } catch (err) {
+                feedbackStatus.textContent = "Failed to send. Try again.";
+                feedbackStatus.className = "error";
+            } finally {
+                feedbackSubmit.disabled = false;
+            }
+        });
+    </script>
+
+</body>
+</html>
